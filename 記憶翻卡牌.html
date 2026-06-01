@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>記憶翻卡牌</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f5f7fb;text-align:center;padding:20px}
+.controls{margin:20px}
+button{padding:10px 16px;margin:5px;border:none;border-radius:8px;background:#4f46e5;color:white;cursor:pointer}
+.grid{display:grid;gap:10px;justify-content:center;margin:auto;max-width:800px}
+.card{width:80px;height:80px;background:#4f46e5;color:white;display:flex;align-items:center;justify-content:center;font-size:2rem;border-radius:12px;cursor:pointer;transform-style:preserve-3d;transition:.4s}
+.card.flipped{background:white;color:#111;border:2px solid #4f46e5}
+.card.matched{background:#22c55e;color:white}
+</style>
+</head>
+<body>
+<h1>記憶翻卡牌</h1>
+<div class="controls">
+<button onclick="startGame(5)">5x5</button>
+<button onclick="startGame(6)">6x6</button>
+</div>
+<div id="game" class="grid"></div>
+<script>
+const emojis=['🍎','🍌','🍒','🍇','🍉','🍋','🥝','🍑','🥥','🍍','🥕','🌽','🍓','🥑','🍔','🍕','🍩','🎈'];
+let first=null,second=null,lock=false;
+function startGame(size){
+ const game=document.getElementById('game');
+ game.innerHTML='';
+ game.style.gridTemplateColumns=`repeat(${size},80px)`;
+ let total=size*size;
+ let needed=Math.floor(total/2);
+ let cards=[...emojis.slice(0,needed),...emojis.slice(0,needed)];
+ if(total%2) cards.push('⭐');
+ cards.sort(()=>Math.random()-0.5);
+ cards.forEach(val=>{
+  const card=document.createElement('div');
+  card.className='card';
+  card.dataset.value=val;
+  card.textContent='?';
+  card.onclick=()=>flip(card);
+  game.appendChild(card);
+ });
+}
+function flip(card){
+ if(lock||card.classList.contains('flipped')||card.classList.contains('matched')) return;
+ card.classList.add('flipped'); card.textContent=card.dataset.value;
+ if(!first){first=card;return;}
+ second=card; lock=true;
+ if(first.dataset.value===second.dataset.value){
+  first.classList.add('matched'); second.classList.add('matched'); reset();
+ }else{
+  setTimeout(()=>{first.classList.remove('flipped');second.classList.remove('flipped');first.textContent='?';second.textContent='?';reset();},800);
+ }
+}
+function reset(){first=null;second=null;lock=false;}
+startGame(5);
+</script>
+</body>
+</html>
