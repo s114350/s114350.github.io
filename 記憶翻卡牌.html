@@ -20,7 +20,6 @@ body{
     background-position:center;
     background-repeat:no-repeat;
     background-attachment:fixed;
-    background.png
 
     min-height:100vh;
 }
@@ -32,9 +31,9 @@ body{
 }
 
 h1{
-    color:#1d4ed8;
-    font-size:60px;
-    margin-bottom:10px;
+    color:#2563eb;
+    font-size:56px;
+    margin:10px;
     text-shadow:2px 2px 5px white;
 }
 
@@ -55,7 +54,7 @@ button:hover{
 
 .info{
     font-size:28px;
-    margin:15px;
+    margin-top:15px;
     color:#14532d;
     font-weight:bold;
 }
@@ -64,7 +63,7 @@ button:hover{
     display:grid;
     gap:12px;
     justify-content:center;
-    margin-top:20px;
+    margin-top:25px;
 }
 
 .card{
@@ -76,15 +75,13 @@ button:hover{
     align-items:center;
 
     background:#bde7ff;
-
     border-radius:16px;
 
     font-size:42px;
     cursor:pointer;
-
     user-select:none;
 
-    transition:.3s;
+    transition:0.3s;
 }
 
 .card.flipped{
@@ -101,7 +98,7 @@ button:hover{
     position:fixed;
     inset:0;
 
-    background:rgba(0,0,0,.5);
+    background:rgba(0,0,0,0.5);
 
     justify-content:center;
     align-items:center;
@@ -111,17 +108,17 @@ button:hover{
     background:white;
     padding:30px;
     border-radius:20px;
-    min-width:280px;
+    min-width:300px;
 }
 
 .win-title{
-    color:#eab308;
-    font-size:32px;
+    font-size:34px;
+    color:#f59e0b;
 }
 
 .lose-title{
+    font-size:34px;
     color:#6b7280;
-    font-size:32px;
 }
 
 .lose{
@@ -153,44 +150,56 @@ button:hover{
 秒
 </div>
 
+<button id="startBtn" onclick="startTimer()">
+開始遊戲
+</button>
+
 <div id="game"></div>
 
 </div>
 
 <!-- 成功 -->
 <div id="winPopup" class="popup">
-    <div class="popup-box">
-        <div class="win-title">⭐ 恭喜完成！ ⭐</div>
+<div class="popup-box">
 
-        <p>你成功完成挑戰！</p>
+<div class="win-title">
+⭐ 恭喜完成！ ⭐
+</div>
 
-        <button onclick="restartGame()">
-            再來一局
-        </button>
-    </div>
+<p>你成功完成挑戰！</p>
+
+<button onclick="restartGame()">
+再來一局
+</button>
+
+</div>
 </div>
 
 <!-- 失敗 -->
 <div id="losePopup" class="popup">
-    <div class="popup-box lose">
-        <div class="lose-title">☁️ 挑戰失敗 ☁️</div>
+<div class="popup-box lose">
 
-        <p>時間到！再試一次吧！</p>
+<div class="lose-title">
+☁️ 挑戰失敗 ☁️
+</div>
 
-        <button onclick="restartGame()">
-            重新挑戰
-        </button>
-    </div>
+<p>時間到！再試一次吧！</p>
+
+<button onclick="restartGame()">
+重新挑戰
+</button>
+
+</div>
 </div>
 
 <script>
 
 const emojis = [
-'🐶','🐱','🐰','🐻',
-'🐼','🐸','🐷','🐥',
-'🍎','🍓','🍋','🍇',
-'⭐','🌸','☁️','🎈',
-'🍀','❤️'
+'🍰','🧁','🍩','🍪',
+'🍫','🍬','🍭','🍿',
+'🍔','🍟','🍕','🌭',
+'🍎','🍓','🍇','🍉',
+'🍋','🥐'
 ];
 
 let firstCard = null;
@@ -201,6 +210,8 @@ let boardSize = 4;
 
 let timeLeft = 60;
 let timerInterval;
+
+let gameStarted = false;
 
 function shuffle(array){
 
@@ -218,21 +229,72 @@ function startGame(size){
 
     clearInterval(timerInterval);
 
-    if(size===4){
-        timeLeft=60;
+    gameStarted = false;
+
+    if(size === 4){
+        timeLeft = 60;
     }else{
-        timeLeft=80;
+        timeLeft = 100;
     }
 
-    document.getElementById("timer").textContent=timeLeft;
+    document.getElementById("timer").textContent = timeLeft;
 
-    timerInterval=setInterval(()=>{
+    firstCard = null;
+    secondCard = null;
+    lockBoard = false;
+
+    document.getElementById("winPopup").style.display = "none";
+    document.getElementById("losePopup").style.display = "none";
+
+    const game = document.getElementById("game");
+
+    game.innerHTML = "";
+
+    game.style.gridTemplateColumns =
+        `repeat(${size},85px)`;
+
+    let pairCount = (size * size) / 2;
+
+    let cards = [
+        ...emojis.slice(0,pairCount),
+        ...emojis.slice(0,pairCount)
+    ];
+
+    shuffle(cards);
+
+    cards.forEach(symbol => {
+
+        const card =
+            document.createElement("div");
+
+        card.className = "card";
+
+        card.dataset.value = symbol;
+
+        card.textContent = "?";
+
+        card.addEventListener("click",
+            ()=>flipCard(card));
+
+        game.appendChild(card);
+
+    });
+}
+
+function startTimer(){
+
+    if(gameStarted) return;
+
+    gameStarted = true;
+
+    timerInterval = setInterval(()=>{
 
         timeLeft--;
 
-        document.getElementById("timer").textContent=timeLeft;
+        document.getElementById("timer")
+            .textContent = timeLeft;
 
-        if(timeLeft<=0){
+        if(timeLeft <= 0){
 
             clearInterval(timerInterval);
 
@@ -240,48 +302,11 @@ function startGame(size){
         }
 
     },1000);
-
-    firstCard=null;
-    secondCard=null;
-    lockBoard=false;
-
-    document.getElementById("winPopup").style.display="none";
-    document.getElementById("losePopup").style.display="none";
-
-    const game=document.getElementById("game");
-
-    game.innerHTML="";
-
-    game.style.gridTemplateColumns=`repeat(${size},85px)`;
-
-    let pairCount=(size*size)/2;
-
-    let cards=[
-        ...emojis.slice(0,pairCount),
-        ...emojis.slice(0,pairCount)
-    ];
-
-    shuffle(cards);
-
-    cards.forEach(symbol=>{
-
-        const card=document.createElement("div");
-
-        card.className="card";
-
-        card.dataset.value=symbol;
-
-        card.textContent="?";
-
-        card.addEventListener("click",()=>flipCard(card));
-
-        game.appendChild(card);
-
-    });
-
 }
 
 function flipCard(card){
+
+    if(!gameStarted) return;
 
     if(lockBoard) return;
 
@@ -291,19 +316,19 @@ function flipCard(card){
 
     card.classList.add("flipped");
 
-    card.textContent=card.dataset.value;
+    card.textContent = card.dataset.value;
 
     if(!firstCard){
 
-        firstCard=card;
+        firstCard = card;
         return;
     }
 
-    secondCard=card;
+    secondCard = card;
 
-    lockBoard=true;
+    lockBoard = true;
 
-    if(firstCard.dataset.value===secondCard.dataset.value){
+    if(firstCard.dataset.value === secondCard.dataset.value){
 
         firstCard.classList.add("matched");
         secondCard.classList.add("matched");
@@ -319,8 +344,8 @@ function flipCard(card){
             firstCard.classList.remove("flipped");
             secondCard.classList.remove("flipped");
 
-            firstCard.textContent="?";
-            secondCard.textContent="?";
+            firstCard.textContent = "?";
+            secondCard.textContent = "?";
 
             resetTurn();
 
@@ -330,30 +355,34 @@ function flipCard(card){
 
 function resetTurn(){
 
-    firstCard=null;
-    secondCard=null;
-    lockBoard=false;
+    firstCard = null;
+    secondCard = null;
+    lockBoard = false;
 }
 
 function checkWin(){
 
-    const matched=document.querySelectorAll(".matched").length;
+    const matched =
+        document.querySelectorAll(".matched").length;
 
-    const total=document.querySelectorAll(".card").length;
+    const total =
+        document.querySelectorAll(".card").length;
 
-    if(matched===total){
+    if(matched === total){
 
         clearInterval(timerInterval);
 
-        document.getElementById("winPopup").style.display="flex";
+        document.getElementById("winPopup")
+            .style.display = "flex";
     }
 }
 
 function showLose(){
 
-    lockBoard=true;
+    lockBoard = true;
 
-    document.getElementById("losePopup").style.display="flex";
+    document.getElementById("losePopup")
+        .style.display = "flex";
 }
 
 function restartGame(){
