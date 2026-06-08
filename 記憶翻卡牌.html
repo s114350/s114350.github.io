@@ -4,124 +4,299 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>記憶翻牌</title>
+
 <style>
+*{
+    box-sizing:border-box;
+}
+
 body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  text-align:center;
-  background:url('file_00000000efe8720981c9628254f7d93c') center/cover no-repeat fixed;
-  min-height:100vh;
+    margin:0;
+    font-family:"Microsoft JhengHei",sans-serif;
+    text-align:center;
+
+    background-image:url("background.jpg");
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    background-attachment:fixed;
+
+    min-height:100vh;
 }
-.overlay{background:rgba(255,255,255,.45);min-height:100vh;padding:20px;}
-h1{color:#4f46e5}
+
+.overlay{
+    min-height:100vh;
+    background:rgba(255,255,255,0.35);
+    padding:20px;
+}
+
+h1{
+    color:#4f46e5;
+    margin-bottom:10px;
+}
+
 button{
-  padding:12px 18px;
-  margin:8px;
-  border:none;
-  border-radius:12px;
-  background:#6366f1;
-  color:white;
-  cursor:pointer;
+    border:none;
+    border-radius:12px;
+    padding:12px 18px;
+    margin:6px;
+    font-size:16px;
+    cursor:pointer;
+
+    background:#6366f1;
+    color:white;
 }
+
+button:hover{
+    opacity:0.9;
+}
+
 #game{
-  display:grid;
-  gap:12px;
-  justify-content:center;
-  margin-top:20px;
+    display:grid;
+    gap:12px;
+    justify-content:center;
+    margin-top:20px;
 }
+
 .card{
-  width:85px;
-  height:85px;
-  border-radius:16px;
-  background:#bae6fd;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:3.2rem;
-  cursor:pointer;
+    width:85px;
+    height:85px;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    border-radius:16px;
+
+    background:#bde7ff;
+    font-size:42px;
+    cursor:pointer;
+
+    user-select:none;
+
+    transition:0.25s;
 }
-.flipped{background:white}
-.matched{background:#86efac}
+
+.card.flipped{
+    background:white;
+}
+
+.card.matched{
+    background:#8be28b;
+}
+
 #popup{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.5);
-  justify-content:center;
-  align-items:center;
+    display:none;
+
+    position:fixed;
+    inset:0;
+
+    background:rgba(0,0,0,0.5);
+
+    justify-content:center;
+    align-items:center;
 }
-.box{
-  background:white;
-  padding:30px;
-  border-radius:20px;
+
+.popup-box{
+    background:white;
+    padding:30px;
+    border-radius:20px;
+    min-width:250px;
+}
+
+.popup-box h2{
+    margin-top:0;
+}
+
+.info{
+    margin-top:10px;
+    font-size:18px;
+    color:#333;
 }
 </style>
 </head>
+
 <body>
-<div class='overlay'>
-<h1>記憶翻牌</h1>
-<button onclick='startGame(4)'>4x4</button>
-<button onclick='startGame(6)'>6x6</button>
-<div id='game'></div>
+
+<div class="overlay">
+
+    <h1>記憶翻牌</h1>
+
+    <button onclick="startGame(4)">4 × 4</button>
+    <button onclick="startGame(6)">6 × 6</button>
+
+    <div class="info">
+        步數：<span id="moves">0</span>
+    </div>
+
+    <div id="game"></div>
+
 </div>
-<div id='popup'>
-  <div class='box'>
-    <h2>🎉 恭喜完成！</h2>
-    <button onclick='restartGame()'>重新開始</button>
-  </div>
+
+<div id="popup">
+    <div class="popup-box">
+        <h2>🎉 恭喜完成！</h2>
+
+        <p>
+            本局共用了
+            <span id="finalMoves"></span>
+            步
+        </p>
+
+        <button onclick="restartGame()">
+            重新開始
+        </button>
+    </div>
 </div>
+
 <script>
-const emojis=['🧸','🌸','🍓','🐥','☁️','🌈','🫧','🧁','⭐','🍬','🐱','🐰','💙','🍀','🎀','✨','🍡','🩷'];
-let first=null,second=null,lock=false,size=4;
 
-function startGame(s){
-  size=s;
-  document.getElementById('popup').style.display='none';
-  const game=document.getElementById('game');
-  game.innerHTML='';
-  game.style.gridTemplateColumns=`repeat(${s},85px)`;
-  let pairs=(s*s)/2;
-  let cards=[...emojis.slice(0,pairs),...emojis.slice(0,pairs)].sort(()=>Math.random()-0.5);
-  cards.forEach(e=>{
-    let card=document.createElement('div');
-    card.className='card';
-    card.dataset.value=e;
-    card.textContent='?';
-    card.onclick=()=>flip(card);
-    game.appendChild(card);
-  });
+const emojis = [
+'🐶','🐱','🐰','🐻',
+'🐼','🐸','🐷','🐥',
+'🍎','🍓','🍋','🍇',
+'⭐','🌸','☁️','🎈',
+'🍀','❤️'
+];
+
+let firstCard = null;
+let secondCard = null;
+let lockBoard = false;
+
+let boardSize = 4;
+let moves = 0;
+
+function shuffle(array){
+    for(let i=array.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [array[i],array[j]]=[array[j],array[i]];
+    }
 }
 
-function flip(card){
-  if(lock||card.classList.contains('flipped')) return;
-  card.classList.add('flipped');
-  card.textContent=card.dataset.value;
-  if(!first){first=card;return;}
-  second=card; lock=true;
-  if(first.dataset.value===second.dataset.value){
-    first.classList.add('matched');
-    second.classList.add('matched');
-    reset();checkWin();
-  } else {
-    setTimeout(()=>{
-      first.classList.remove('flipped');
-      second.classList.remove('flipped');
-      first.textContent='?';
-      second.textContent='?';
-      reset();
-    },800);
-  }
+function startGame(size){
+
+    boardSize = size;
+
+    moves = 0;
+    document.getElementById("moves").textContent = moves;
+
+    document.getElementById("popup").style.display = "none";
+
+    firstCard = null;
+    secondCard = null;
+    lockBoard = false;
+
+    const game = document.getElementById("game");
+
+    game.innerHTML = "";
+    game.style.gridTemplateColumns = `repeat(${size},85px)`;
+
+    const pairCount = (size * size) / 2;
+
+    let cards = [
+        ...emojis.slice(0,pairCount),
+        ...emojis.slice(0,pairCount)
+    ];
+
+    shuffle(cards);
+
+    cards.forEach(symbol => {
+
+        const card = document.createElement("div");
+
+        card.className = "card";
+        card.dataset.value = symbol;
+
+        card.textContent = "?";
+
+        card.addEventListener("click", () => flipCard(card));
+
+        game.appendChild(card);
+
+    });
+
 }
 
-function reset(){first=null;second=null;lock=false;}
+function flipCard(card){
+
+    if(lockBoard) return;
+
+    if(card.classList.contains("flipped")) return;
+
+    if(card.classList.contains("matched")) return;
+
+    card.classList.add("flipped");
+    card.textContent = card.dataset.value;
+
+    if(!firstCard){
+        firstCard = card;
+        return;
+    }
+
+    secondCard = card;
+
+    moves++;
+    document.getElementById("moves").textContent = moves;
+
+    lockBoard = true;
+
+    if(firstCard.dataset.value === secondCard.dataset.value){
+
+        firstCard.classList.add("matched");
+        secondCard.classList.add("matched");
+
+        resetTurn();
+
+        checkWin();
+
+    }else{
+
+        setTimeout(() => {
+
+            firstCard.classList.remove("flipped");
+            secondCard.classList.remove("flipped");
+
+            firstCard.textContent = "?";
+            secondCard.textContent = "?";
+
+            resetTurn();
+
+        }, 800);
+
+    }
+}
+
+function resetTurn(){
+    firstCard = null;
+    secondCard = null;
+    lockBoard = false;
+}
+
 function checkWin(){
-  if(document.querySelectorAll('.matched').length===document.querySelectorAll('.card').length)
-    document.getElementById('popup').style.display='flex';
+
+    const matched =
+        document.querySelectorAll(".matched").length;
+
+    const total =
+        document.querySelectorAll(".card").length;
+
+    if(matched === total){
+
+        document.getElementById("finalMoves")
+            .textContent = moves;
+
+        document.getElementById("popup")
+            .style.display = "flex";
+    }
 }
-function restartGame(){startGame(size)}
+
+function restartGame(){
+    startGame(boardSize);
+}
+
 startGame(4);
+
 </script>
+
 </body>
 </html>
-
-
