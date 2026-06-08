@@ -15,7 +15,7 @@ body{
     font-family:"Microsoft JhengHei",sans-serif;
     text-align:center;
 
-    background-image:url("background.jpg");
+    background-image:url("background.png");
     background-size:cover;
     background-position:center;
     background-repeat:no-repeat;
@@ -26,29 +26,37 @@ body{
 
 .overlay{
     min-height:100vh;
-    background:rgba(255,255,255,0.35);
+    background:rgba(255,255,255,0.25);
     padding:20px;
 }
 
 h1{
-    color:#4f46e5;
+    color:#1d4ed8;
+    font-size:60px;
     margin-bottom:10px;
+    text-shadow:2px 2px 5px white;
 }
 
 button{
     border:none;
-    border-radius:12px;
-    padding:12px 18px;
-    margin:6px;
-    font-size:16px;
+    border-radius:15px;
+    padding:12px 20px;
+    margin:5px;
+    font-size:18px;
     cursor:pointer;
-
-    background:#6366f1;
+    background:#4f6cff;
     color:white;
 }
 
 button:hover{
     opacity:0.9;
+}
+
+.info{
+    font-size:28px;
+    margin:15px;
+    color:#14532d;
+    font-weight:bold;
 }
 
 #game{
@@ -66,15 +74,16 @@ button:hover{
     justify-content:center;
     align-items:center;
 
+    background:#bde7ff;
+
     border-radius:16px;
 
-    background:#bde7ff;
     font-size:42px;
     cursor:pointer;
 
     user-select:none;
 
-    transition:0.25s;
+    transition:.3s;
 }
 
 .card.flipped{
@@ -82,16 +91,16 @@ button:hover{
 }
 
 .card.matched{
-    background:#8be28b;
+    background:#86efac;
 }
 
-#popup{
+.popup{
     display:none;
 
     position:fixed;
     inset:0;
 
-    background:rgba(0,0,0,0.5);
+    background:rgba(0,0,0,.5);
 
     justify-content:center;
     align-items:center;
@@ -101,17 +110,29 @@ button:hover{
     background:white;
     padding:30px;
     border-radius:20px;
-    min-width:250px;
+    min-width:280px;
 }
 
-.popup-box h2{
-    margin-top:0;
+.win-title{
+    color:#eab308;
+    font-size:32px;
 }
 
-.info{
-    margin-top:10px;
-    font-size:18px;
-    color:#333;
+.lose-title{
+    color:#6b7280;
+    font-size:32px;
+}
+
+.lose{
+    animation:shake .5s;
+}
+
+@keyframes shake{
+    0%{transform:translateX(0);}
+    25%{transform:translateX(-10px);}
+    50%{transform:translateX(10px);}
+    75%{transform:translateX(-10px);}
+    100%{transform:translateX(0);}
 }
 </style>
 </head>
@@ -120,31 +141,43 @@ button:hover{
 
 <div class="overlay">
 
-    <h1>記憶翻牌</h1>
+<h1>記憶翻牌</h1>
 
-    <button onclick="startGame(4)">4 × 4</button>
-    <button onclick="startGame(6)">6 × 6</button>
+<button onclick="startGame(4)">4 × 4</button>
+<button onclick="startGame(6)">6 × 6</button>
 
-    <div class="info">
-        步數：<span id="moves">0</span>
-    </div>
+<div class="info">
+⏰ 時間：
+<span id="timer">60</span>
+秒
+</div>
 
-    <div id="game"></div>
+<div id="game"></div>
 
 </div>
 
-<div id="popup">
+<!-- 成功 -->
+<div id="winPopup" class="popup">
     <div class="popup-box">
-        <h2>🎉 恭喜完成！</h2>
+        <div class="win-title">⭐ 恭喜完成！ ⭐</div>
 
-        <p>
-            本局共用了
-            <span id="finalMoves"></span>
-            步
-        </p>
+        <p>你成功完成挑戰！</p>
 
         <button onclick="restartGame()">
-            重新開始
+            再來一局
+        </button>
+    </div>
+</div>
+
+<!-- 失敗 -->
+<div id="losePopup" class="popup">
+    <div class="popup-box lose">
+        <div class="lose-title">☁️ 挑戰失敗 ☁️</div>
+
+        <p>時間到！再試一次吧！</p>
+
+        <button onclick="restartGame()">
+            重新挑戰
         </button>
     </div>
 </div>
@@ -164,11 +197,16 @@ let secondCard = null;
 let lockBoard = false;
 
 let boardSize = 4;
-let moves = 0;
+
+let timeLeft = 60;
+let timerInterval;
 
 function shuffle(array){
+
     for(let i=array.length-1;i>0;i--){
-        const j=Math.floor(Math.random()*(i+1));
+
+        let j=Math.floor(Math.random()*(i+1));
+
         [array[i],array[j]]=[array[j],array[i]];
     }
 }
@@ -177,39 +215,64 @@ function startGame(size){
 
     boardSize = size;
 
-    moves = 0;
-    document.getElementById("moves").textContent = moves;
+    clearInterval(timerInterval);
 
-    document.getElementById("popup").style.display = "none";
+    if(size===4){
+        timeLeft=60;
+    }else{
+        timeLeft=80;
+    }
 
-    firstCard = null;
-    secondCard = null;
-    lockBoard = false;
+    document.getElementById("timer").textContent=timeLeft;
 
-    const game = document.getElementById("game");
+    timerInterval=setInterval(()=>{
 
-    game.innerHTML = "";
-    game.style.gridTemplateColumns = `repeat(${size},85px)`;
+        timeLeft--;
 
-    const pairCount = (size * size) / 2;
+        document.getElementById("timer").textContent=timeLeft;
 
-    let cards = [
+        if(timeLeft<=0){
+
+            clearInterval(timerInterval);
+
+            showLose();
+        }
+
+    },1000);
+
+    firstCard=null;
+    secondCard=null;
+    lockBoard=false;
+
+    document.getElementById("winPopup").style.display="none";
+    document.getElementById("losePopup").style.display="none";
+
+    const game=document.getElementById("game");
+
+    game.innerHTML="";
+
+    game.style.gridTemplateColumns=`repeat(${size},85px)`;
+
+    let pairCount=(size*size)/2;
+
+    let cards=[
         ...emojis.slice(0,pairCount),
         ...emojis.slice(0,pairCount)
     ];
 
     shuffle(cards);
 
-    cards.forEach(symbol => {
+    cards.forEach(symbol=>{
 
-        const card = document.createElement("div");
+        const card=document.createElement("div");
 
-        card.className = "card";
-        card.dataset.value = symbol;
+        card.className="card";
 
-        card.textContent = "?";
+        card.dataset.value=symbol;
 
-        card.addEventListener("click", () => flipCard(card));
+        card.textContent="?";
+
+        card.addEventListener("click",()=>flipCard(card));
 
         game.appendChild(card);
 
@@ -226,21 +289,20 @@ function flipCard(card){
     if(card.classList.contains("matched")) return;
 
     card.classList.add("flipped");
-    card.textContent = card.dataset.value;
+
+    card.textContent=card.dataset.value;
 
     if(!firstCard){
-        firstCard = card;
+
+        firstCard=card;
         return;
     }
 
-    secondCard = card;
+    secondCard=card;
 
-    moves++;
-    document.getElementById("moves").textContent = moves;
+    lockBoard=true;
 
-    lockBoard = true;
-
-    if(firstCard.dataset.value === secondCard.dataset.value){
+    if(firstCard.dataset.value===secondCard.dataset.value){
 
         firstCard.classList.add("matched");
         secondCard.classList.add("matched");
@@ -251,46 +313,50 @@ function flipCard(card){
 
     }else{
 
-        setTimeout(() => {
+        setTimeout(()=>{
 
             firstCard.classList.remove("flipped");
             secondCard.classList.remove("flipped");
 
-            firstCard.textContent = "?";
-            secondCard.textContent = "?";
+            firstCard.textContent="?";
+            secondCard.textContent="?";
 
             resetTurn();
 
-        }, 800);
-
+        },800);
     }
 }
 
 function resetTurn(){
-    firstCard = null;
-    secondCard = null;
-    lockBoard = false;
+
+    firstCard=null;
+    secondCard=null;
+    lockBoard=false;
 }
 
 function checkWin(){
 
-    const matched =
-        document.querySelectorAll(".matched").length;
+    const matched=document.querySelectorAll(".matched").length;
 
-    const total =
-        document.querySelectorAll(".card").length;
+    const total=document.querySelectorAll(".card").length;
 
-    if(matched === total){
+    if(matched===total){
 
-        document.getElementById("finalMoves")
-            .textContent = moves;
+        clearInterval(timerInterval);
 
-        document.getElementById("popup")
-            .style.display = "flex";
+        document.getElementById("winPopup").style.display="flex";
     }
 }
 
+function showLose(){
+
+    lockBoard=true;
+
+    document.getElementById("losePopup").style.display="flex";
+}
+
 function restartGame(){
+
     startGame(boardSize);
 }
 
